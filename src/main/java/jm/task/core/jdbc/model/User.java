@@ -59,4 +59,15 @@ public class User {
     public void setAge(Byte age) {
         this.age = age;
     }
+
+    // должен быть переопределен toString в классе User
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", age=" + age +
+                '}';
+    }
 }
