@@ -1,11 +1,9 @@
 package jm.task.core.jdbc.dao;
 
-import com.mysql.cj.jdbc.JdbcConnection;
 import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.util.Util;
 
-import javax.sql.DataSource;
-import java.sql.PreparedStatement;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -14,27 +12,23 @@ import java.util.List;
 
 public class UserDaoJDBCImpl implements UserDao {
 
+    private Connection connection;
+    private Statement statement;
+
     public UserDaoJDBCImpl() {
 
     }
 
-    private void ddlSqlCommand(String sqlCommand) {
-        try (Statement statement = Util.getMySQLConnection().createStatement()) {
-            statement.execute(sqlCommand);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void dmlSqlCommand(String sqlCommand) {
-        try (PreparedStatement statement = Util.getMySQLConnection().prepareStatement(sqlCommand)) {
-            statement.execute();
+    private void commandSQL(String sqlCommand) {
+        try {
+            getStatement().execute(sqlCommand);
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
     // Создание таблицы для User(ов) – не должно приводить к исключению, если такая таблица уже существует
+
     public void createUsersTable() {
         String sqlCreateTable = """
                 CREATE TABLE IF NOT EXISTS users (
@@ -43,13 +37,13 @@ public class UserDaoJDBCImpl implements UserDao {
                 last_name TEXT NOT NULL ,
                 age TINYINT NOT NULL )
                 """;
-        ddlSqlCommand(sqlCreateTable);
+        commandSQL(sqlCreateTable);
     }
 
     // Удаление таблицы User(ов) – не должно приводить к исключению, если таблицы не существует
     public void dropUsersTable() {
         String sqlDropTable = "DROP TABLE IF EXISTS users";
-        ddlSqlCommand(sqlDropTable);
+        commandSQL(sqlDropTable);
 
     }
 
@@ -59,7 +53,7 @@ public class UserDaoJDBCImpl implements UserDao {
         String sqlInsertInto = "INSERT INTO users (name, last_name, age) " +
                                "VALUES ('" + name + "', '" + lastName + "' , " + age + ");";
 
-        dmlSqlCommand(sqlInsertInto);
+        commandSQL(sqlInsertInto);
         System.out.printf("User с именем – %s добавлен в базу данных\n", name);
 
     }
@@ -67,7 +61,7 @@ public class UserDaoJDBCImpl implements UserDao {
     // Удаление User из таблицы (по id)
     public void removeUserById(long id) {
         String sqlDeleteUserFromId = "DELETE FROM users WHERE id = " + id;
-        dmlSqlCommand(sqlDeleteUserFromId);
+        commandSQL(sqlDeleteUserFromId);
 
     }
 
@@ -77,7 +71,7 @@ public class UserDaoJDBCImpl implements UserDao {
 
         String sqlGetAllUsers = "SELECT  * FROM users";
 
-        try (Statement statement = Util.getMySQLConnection().createStatement()) {
+        try {
             ResultSet resultSet = statement.executeQuery(sqlGetAllUsers);
 
             while (resultSet.next()) {
@@ -101,7 +95,29 @@ public class UserDaoJDBCImpl implements UserDao {
     // Очистка содержания таблицы
     public void cleanUsersTable() {
         String sqlCleanTable = "TRUNCATE users";
-        ddlSqlCommand(sqlCleanTable);
+        commandSQL(sqlCleanTable);
 
+    }
+
+    private Statement getStatement() {
+        try {
+            if (statement == null || statement.isClosed()) {
+                statement = getConnection().createStatement();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return statement;
+    }
+
+    private Connection getConnection() {
+        try {
+            if (connection == null || connection.isClosed()) {
+                connection = Util.getMySQLConnection();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return connection;
     }
 }
