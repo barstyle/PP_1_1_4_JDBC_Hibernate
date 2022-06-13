@@ -1,6 +1,5 @@
 package jm.task.core.jdbc.dao;
 
-import jakarta.persistence.Entity;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;

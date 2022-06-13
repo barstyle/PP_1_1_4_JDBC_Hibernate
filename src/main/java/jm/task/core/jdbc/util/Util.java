@@ -1,28 +1,17 @@
 package jm.task.core.jdbc.util;
 
-
 import jm.task.core.jdbc.model.User;
 import org.hibernate.SessionFactory;
-import org.hibernate.boot.Metadata;
-import org.hibernate.boot.MetadataSources;
-import org.hibernate.boot.registry.StandardServiceRegistry;
+
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
 import org.hibernate.service.ServiceRegistry;
-import org.hibernate.service.internal.SessionFactoryServiceRegistryImpl;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
-
-/*
-hibernate.dialect=org.hibernate.dialect.PostgreSQL9Dialect
-hibernate.show_sql=true
-hibernate.hbm2ddl.auto=create
-hibernate.temp.use_jdbc_metadata_defaults = false
- */
 
 public class Util {
     // реализуйте настройку соединения с БД
