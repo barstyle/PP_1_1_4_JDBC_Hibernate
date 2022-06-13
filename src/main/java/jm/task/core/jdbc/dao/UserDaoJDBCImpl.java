@@ -16,7 +16,6 @@ public class UserDaoJDBCImpl implements UserDao {
     private Statement statement;
 
     public UserDaoJDBCImpl() {
-
     }
 
     private void commandSQL(String sqlCommand) {

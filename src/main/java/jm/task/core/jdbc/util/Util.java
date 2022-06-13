@@ -1,13 +1,34 @@
 package jm.task.core.jdbc.util;
 
+
+import jm.task.core.jdbc.model.User;
+import org.hibernate.SessionFactory;
+import org.hibernate.boot.Metadata;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.cfg.Environment;
+import org.hibernate.service.ServiceRegistry;
+import org.hibernate.service.internal.SessionFactoryServiceRegistryImpl;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Properties;
+
+/*
+hibernate.dialect=org.hibernate.dialect.PostgreSQL9Dialect
+hibernate.show_sql=true
+hibernate.hbm2ddl.auto=create
+hibernate.temp.use_jdbc_metadata_defaults = false
+ */
 
 public class Util {
     // реализуйте настройку соединения с БД
 
     private static Connection connection = null;
+    private static SessionFactory sessionFactory;
 
     private static final String PASSWORD = "qwerty007";
     private static final String USER_NAME = "BD_Admin";
@@ -26,5 +47,32 @@ public class Util {
             e.printStackTrace();
         }
         return connection;
+    }
+
+    private static Properties hibernateProperties() {
+        Properties properties = new Properties();
+        properties.setProperty(Environment.DRIVER, "com.mysql.cj.jdbc.Driver");
+        properties.setProperty(Environment.URL, URL);
+        properties.setProperty(Environment.USER, USER_NAME);
+        properties.setProperty(Environment.PASS, PASSWORD);
+        properties.setProperty(Environment.DIALECT, "org.hibernate.dialect.MySQLDialect");
+        properties.setProperty(Environment.SHOW_SQL, "true");
+        properties.setProperty(Environment.CURRENT_SESSION_CONTEXT_CLASS, "thread");
+        properties.setProperty(Environment.HBM2DDL_AUTO, "create-drop");
+        return properties;
+    }
+
+    public static SessionFactory getSessionFactory() {
+        Configuration configuration = new Configuration();
+        configuration.setProperties(hibernateProperties());
+        configuration.addAnnotatedClass(User.class);
+
+        ServiceRegistry registry = new StandardServiceRegistryBuilder()
+                .applySettings(configuration.getProperties()).build();
+
+        if (sessionFactory == null) {
+            sessionFactory = configuration.buildSessionFactory(registry);
+        }
+        return sessionFactory;
     }
 }
