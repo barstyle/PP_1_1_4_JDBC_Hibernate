@@ -1,9 +1,10 @@
 package jm.task.core.jdbc.dao;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 
-import jakarta.persistence.criteria.CriteriaDelete;
 import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.util.Util;
 import org.hibernate.Session;
@@ -11,7 +12,6 @@ import org.hibernate.SessionFactory;
 import org.hibernate.query.NativeQuery;
 
 
-import java.util.ArrayList;
 import java.util.List;
 
 // Методы создания и удаления таблицы пользователей в классе UserHibernateDaoImpl
@@ -19,7 +19,7 @@ import java.util.List;
 
 public class UserDaoHibernateImpl implements UserDao {
 
-    private SessionFactory sessionFactory = null;
+    private SessionFactory sessionFactory;
 
     public UserDaoHibernateImpl() {
     }
@@ -27,9 +27,10 @@ public class UserDaoHibernateImpl implements UserDao {
     private void nativeSQL(String nativeSQL) {
         try (Session session = getSessionFactory().openSession()) {
             session.beginTransaction();
-            session.createNativeMutationQuery(nativeSQL);
+            NativeQuery<User> nativeQuery = session.createNativeQuery(nativeSQL, User.class);
+            nativeQuery.executeUpdate();
             session.getTransaction().commit();
-            System.out.println(nativeSQL);
+
         }
     }
 
@@ -70,8 +71,15 @@ public class UserDaoHibernateImpl implements UserDao {
         Session session = getSessionFactory().getCurrentSession();
         session.beginTransaction();
 
-        User user = session.getReference(User.class, id);
-        session.remove(user);
+        User user;
+        try {
+            user = session.getReference(User.class, id);
+            session.remove(user);
+        } catch (EntityNotFoundException e) {
+            System.out.printf("user with this id = %d was not found\n", id);
+            e.printStackTrace();
+        }
+
 
         session.getTransaction().commit();
         session.close();
