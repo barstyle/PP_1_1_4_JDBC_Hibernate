@@ -1,20 +1,23 @@
 package jm.task.core.jdbc.dao;
 
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
 
 import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.util.Util;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import org.hibernate.query.NativeQuery;
 
 
+import java.util.ArrayList;
 import java.util.List;
 
 // Методы создания и удаления таблицы пользователей в классе UserHibernateDaoImpl
 // должны быть реализованы с помощью SQL.
+
+// 1. Criteria не используем
+// 2. Делаем ролбек в случае неудачной транзакции
 
 public class UserDaoHibernateImpl implements UserDao {
 
@@ -24,12 +27,15 @@ public class UserDaoHibernateImpl implements UserDao {
     }
 
     private void nativeSQL(String nativeSQL) {
-        try (Session session = getSessionFactory().openSession()) {
-            session.beginTransaction();
+        Session session = getSessionFactory().openSession();
+        Transaction transaction = session.beginTransaction();
+        try (session) {
             NativeQuery<User> nativeQuery = session.createNativeQuery(nativeSQL, User.class);
             nativeQuery.executeUpdate();
-            session.getTransaction().commit();
-
+            transaction.commit();
+        } catch (Exception e) {
+            transaction.rollback();
+            e.printStackTrace();
         }
     }
 
@@ -55,49 +61,54 @@ public class UserDaoHibernateImpl implements UserDao {
     public void saveUser(String name, String lastName, byte age) {
         User user = new User(name, lastName, age);
         Session session = getSessionFactory().getCurrentSession();
-        session.beginTransaction();
+        Transaction transaction = session.beginTransaction();
 
-        session.persist(user);
-
-        session.getTransaction().commit();
-        session.close();
-        System.out.printf("User с именем – %s добавлен в базу данных\n", name);
+        try (session) {
+            session.persist(user);
+            transaction.commit();
+            System.out.printf("User с именем – %s добавлен в базу данных\n", name);
+        } catch (Exception e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void removeUserById(long id) {
-
         Session session = getSessionFactory().getCurrentSession();
-        session.beginTransaction();
-
+        Transaction transaction = null;
         User user;
-        try {
-            user = session.getReference(User.class, id);
-            session.remove(user);
-        } catch (EntityNotFoundException e) {
+
+        try (session) {
+            transaction = session.beginTransaction();
+            user = session.get(User.class, id);
+            if (user != null) {
+                session.remove(user);
+            }
+            transaction.commit();
+        } catch (EntityNotFoundException | IllegalStateException e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
             System.out.printf("user with this id = %d was not found\n", id);
             e.printStackTrace();
         }
-
-
-        session.getTransaction().commit();
-        session.close();
     }
 
     @Override
     public List<User> getAllUsers() {
-        List<User> users;
+        List<User> users = new ArrayList<>();
 
         Session session = getSessionFactory().getCurrentSession();
-        session.beginTransaction();
+        Transaction transaction = session.beginTransaction();
 
-        CriteriaBuilder builder = session.getCriteriaBuilder();
-        CriteriaQuery<User> userCriteriaQuery = builder.createQuery(User.class);
-        userCriteriaQuery.from(User.class);
-        users = session.createQuery(userCriteriaQuery).list();
-
-        session.getTransaction().commit();
-        session.close();
+        try (session) {
+            users = session.createSelectionQuery("from User", User.class).list();
+            transaction.commit();
+        } catch (Exception e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
 
         return users;
     }
